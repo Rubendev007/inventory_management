@@ -11,32 +11,51 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<InventoryItem> _inventoryItems = [];
   List<InventoryItem> _filteredItems = [];
+  List<String> _categories = ["All"];
+  String _selectedCategory = "All";
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadInventoryItems();
-    _searchController.addListener(_filterItems);
+    _loadCategories();
+    _searchController.addListener(_applyFilters);
   }
 
-  // Fetch inventory items from the database
+  // Fetch all inventory items
   Future<void> _loadInventoryItems() async {
     final dbHelper = DatabaseHelper.instance;
     final items = await dbHelper.getAllInventoryItems();
     setState(() {
       _inventoryItems = items;
-      _filteredItems = items;
+      _applyFilters();
     });
   }
 
-  // Filter items based on search input
-  void _filterItems() {
+  // Fetch unique categories from the database
+  Future<void> _loadCategories() async {
+    final dbHelper = DatabaseHelper.instance;
+    final items = await dbHelper.getAllInventoryItems();
+    Set<String> uniqueCategories = {"All"};
+    for (var item in items) {
+      uniqueCategories.add(item.category);
+    }
+    setState(() {
+      _categories = uniqueCategories.toList();
+    });
+  }
+
+  // Apply search and category filters
+  void _applyFilters() {
     String query = _searchController.text.toLowerCase();
     setState(() {
       _filteredItems = _inventoryItems.where((item) {
-        return item.name.toLowerCase().contains(query) ||
+        bool matchesSearch = item.name.toLowerCase().contains(query) ||
             item.category.toLowerCase().contains(query);
+        bool matchesCategory =
+            _selectedCategory == "All" || item.category == _selectedCategory;
+        return matchesSearch && matchesCategory;
       }).toList();
     });
   }
@@ -46,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final dbHelper = DatabaseHelper.instance;
     await dbHelper.deleteInventoryItem(id);
     _loadInventoryItems();
+    _loadCategories();
   }
 
   // Show confirmation dialog before deleting an item
@@ -57,13 +77,13 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Text("Are you sure you want to delete this item?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), // Cancel
+            onPressed: () => Navigator.pop(context),
             child: Text("Cancel"),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              _deleteItem(id); // Delete item
+              Navigator.pop(context);
+              _deleteItem(id);
             },
             child: Text("Delete", style: TextStyle(color: Colors.red)),
           ),
@@ -94,6 +114,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             SizedBox(height: 10),
+
+            // Category Filter Dropdown
+            DropdownButton<String>(
+              value: _selectedCategory,
+              isExpanded: true,
+              items: _categories.map((String category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategory = value!;
+                  _applyFilters();
+                });
+              },
+            ),
+            SizedBox(height: 10),
+
+            // Inventory List
             Expanded(
               child: _filteredItems.isEmpty
                   ? Center(child: Text("No items found"))
@@ -110,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddItemScreen(itemToEdit: item),
+                              builder: (context) =>
+                                  AddItemScreen(itemToEdit: item),
                             ),
                           );
                         } else if (value == "delete") {
@@ -137,7 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AddItemScreen()),
-          ).then((_) => _loadInventoryItems());
+          ).then((_) {
+            _loadInventoryItems();
+            _loadCategories();
+          });
         },
         child: Icon(Icons.add),
       ),
