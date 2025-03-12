@@ -6,7 +6,7 @@ class AddItemScreen extends StatefulWidget {
   final InventoryItem? itemToEdit; // New parameter for editing
 
   // Constructor to handle item edit
-  AddItemScreen({this.itemToEdit});
+  const AddItemScreen({super.key, this.itemToEdit});
 
   @override
   _AddItemScreenState createState() => _AddItemScreenState();

@@ -4,6 +4,8 @@ import 'inventory_item.dart';
 import 'add_item_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
