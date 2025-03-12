@@ -4,8 +4,6 @@ import 'inventory_item.dart';
 import 'add_item_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -25,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.addListener(_applyFilters);
   }
 
-  // Fetch all inventory items
   Future<void> _loadInventoryItems() async {
     final dbHelper = DatabaseHelper.instance;
     final items = await dbHelper.getAllInventoryItems();
@@ -35,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Fetch unique categories from the database
   Future<void> _loadCategories() async {
     final dbHelper = DatabaseHelper.instance;
     final items = await dbHelper.getAllInventoryItems();
@@ -48,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Apply search and category filters
   void _applyFilters() {
     String query = _searchController.text.toLowerCase();
     setState(() {
@@ -62,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Function to delete an inventory item
   void _deleteItem(int id) async {
     final dbHelper = DatabaseHelper.instance;
     await dbHelper.deleteInventoryItem(id);
@@ -70,40 +64,37 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCategories();
   }
 
-  // Show confirmation dialog before deleting an item
   void _confirmDeleteItem(int id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Delete Item"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text("Delete Item", style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text("Are you sure you want to delete this item?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
+            child: Text("Cancel", style: TextStyle(color: Colors.blue)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _deleteItem(id);
             },
-            child: Text("Delete", style: TextStyle(color: Colors.red)),
+            child: Text("Delete", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  // Function to check if an item is low in stock
-  bool _isLowStock(InventoryItem item) {
-    return item.quantity <= item.lowStockThreshold;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Inventory Management"),
+        title: Text("Inventory Management", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.blueAccent,
+        elevation: 5,
       ),
       body: Padding(
         padding: EdgeInsets.all(8.0),
@@ -113,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: "Search",
+                labelText: "Search Items",
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
@@ -122,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 10),
 
-            // Category Filter Dropdown
+            // Category Dropdown
             DropdownButton<String>(
               value: _selectedCategory,
               isExpanded: true,
@@ -144,40 +135,61 @@ class _HomeScreenState extends State<HomeScreen> {
             // Inventory List
             Expanded(
               child: _filteredItems.isEmpty
-                  ? Center(child: Text("No items found"))
+                  ? Center(
+                child: Text(
+                  "No items found",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+              )
                   : ListView.builder(
                 itemCount: _filteredItems.length,
                 itemBuilder: (context, index) {
                   final item = _filteredItems[index];
-                  return ListTile(
-                    title: Text(item.name),
-                    subtitle: Text("Quantity: ${item.quantity} ${item.unit}"),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == "edit") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  AddItemScreen(itemToEdit: item),
-                            ),
-                          );
-                        } else if (value == "delete") {
-                          _confirmDeleteItem(item.id!);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(value: "edit", child: Text("Edit")),
-                        PopupMenuItem(
-                          value: "delete",
-                          child: Text("Delete", style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
+                  bool isLowStock = item.quantity <= item.lowStockThreshold;
+
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    // Low stock alert
-                    leading: _isLowStock(item)
-                        ? Icon(Icons.warning, color: Colors.red)
-                        : null,
+                    elevation: 3,
+                    margin: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.all(10),
+                      leading: Icon(
+                        isLowStock ? Icons.warning_amber_rounded : Icons.inventory,
+                        color: isLowStock ? Colors.redAccent : Colors.blue,
+                        size: 30,
+                      ),
+                      title: Text(
+                        item.name,
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        "Qty: ${item.quantity} ${item.unit}  |  Category: ${item.category}",
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == "edit") {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddItemScreen(itemToEdit: item),
+                              ),
+                            );
+                          } else if (value == "delete") {
+                            _confirmDeleteItem(item.id!);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(value: "edit", child: Text("Edit")),
+                          PopupMenuItem(
+                            value: "delete",
+                            child: Text("Delete", style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
@@ -195,7 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadCategories();
           });
         },
-        child: Icon(Icons.add),
+        backgroundColor: Colors.blueAccent,
+        child: Icon(Icons.add, size: 30),
       ),
     );
   }
