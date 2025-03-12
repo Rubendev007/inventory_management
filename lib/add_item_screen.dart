@@ -122,14 +122,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               TextFormField(
                 controller: _lowStockThresholdController,
-                decoration: InputDecoration(labelText: "Low Stock Threshold"),
+                decoration: InputDecoration(labelText: "Low Stock Alert"),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return "Please enter the low stock threshold";
+                    return "Please enter the low stock alert value";
                   }
                   if (double.tryParse(value) == null) {
-                    return "Please enter a valid number for low stock threshold";
+                    return "Please enter a valid number for low stock alert";
                   }
                   return null;
                 },
