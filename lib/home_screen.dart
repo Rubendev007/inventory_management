@@ -9,19 +9,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<InventoryItem> _inventoryItems = [];
+  List<InventoryItem> _filteredItems = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInventoryItems();
+    _searchController.addListener(_filterItems);
+  }
+
   // Fetch inventory items from the database
-  Future<List<InventoryItem>> _fetchInventoryItems() async {
+  Future<void> _loadInventoryItems() async {
     final dbHelper = DatabaseHelper.instance;
-    return await dbHelper.getAllInventoryItems();
+    final items = await dbHelper.getAllInventoryItems();
+    setState(() {
+      _inventoryItems = items;
+      _filteredItems = items;
+    });
+  }
+
+  // Filter items based on search input
+  void _filterItems() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredItems = _inventoryItems.where((item) {
+        return item.name.toLowerCase().contains(query) ||
+            item.category.toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   // Function to delete an inventory item
   void _deleteItem(int id) async {
     final dbHelper = DatabaseHelper.instance;
     await dbHelper.deleteInventoryItem(id);
-
-    // Refresh UI after deletion
-    setState(() {});
+    _loadInventoryItems();
   }
 
   // Show confirmation dialog before deleting an item
@@ -53,95 +77,67 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Inventory Management"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Search functionality will be implemented later
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              // Filter functionality will be implemented later
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(8.0),
-        child: FutureBuilder<List<InventoryItem>>(
-          future: _fetchInventoryItems(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            }
-
-            final inventoryItems = snapshot.data ?? [];
-
-            if (inventoryItems.isEmpty) {
-              return Center(child: Text("No inventory items available"));
-            }
-
-            return ListView.builder(
-              itemCount: inventoryItems.length,
-              itemBuilder: (context, index) {
-                final item = inventoryItems[index];
-                return ListTile(
-                  title: Text(item.name),
-                  subtitle: Text("Quantity: ${item.quantity} ${item.unit}"),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == "edit") {
-                        // Navigate to edit item screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                AddItemScreen(itemToEdit: item),
-                          ),
-                        );
-                      } else if (value == "delete") {
-                        _confirmDeleteItem(item.id!);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: "edit",
-                        child: Text("Edit"),
-                      ),
-                      PopupMenuItem(
-                        value: "delete",
-                        child: Text("Delete", style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    // Navigate to edit item screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddItemScreen(itemToEdit: item),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
+        child: Column(
+          children: [
+            // Search Bar
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: "Search",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: _filteredItems.isEmpty
+                  ? Center(child: Text("No items found"))
+                  : ListView.builder(
+                itemCount: _filteredItems.length,
+                itemBuilder: (context, index) {
+                  final item = _filteredItems[index];
+                  return ListTile(
+                    title: Text(item.name),
+                    subtitle: Text("Quantity: ${item.quantity} ${item.unit}"),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == "edit") {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddItemScreen(itemToEdit: item),
+                            ),
+                          );
+                        } else if (value == "delete") {
+                          _confirmDeleteItem(item.id!);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(value: "edit", child: Text("Edit")),
+                        PopupMenuItem(
+                          value: "delete",
+                          child: Text("Delete", style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to add item screen
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AddItemScreen()),
-          );
+          ).then((_) => _loadInventoryItems());
         },
         child: Icon(Icons.add),
       ),
