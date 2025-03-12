@@ -92,6 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Function to check if an item is low in stock
+  bool _isLowStock(InventoryItem item) {
+    return item.quantity <= item.lowStockThreshold;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,6 +172,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+                    // Low stock alert
+                    leading: _isLowStock(item)
+                        ? Icon(Icons.warning, color: Colors.red)
+                        : null,
                   );
                 },
               ),
