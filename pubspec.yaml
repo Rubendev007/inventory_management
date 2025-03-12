@@ -1,0 +1,24 @@
+name: inventory_management
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.0.0+3   # SQLite for local storage
+  path_provider: ^2.0.9  # To access device storage path
+  provider: ^6.0.0  # For state management (optional but useful)
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
