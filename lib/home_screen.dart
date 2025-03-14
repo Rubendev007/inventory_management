@@ -176,7 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               MaterialPageRoute(
                                 builder: (context) => AddItemScreen(itemToEdit: item),
                               ),
-                            );
+                            ).then((_) {
+                              _loadInventoryItems(); // Refresh list after editing
+                            });
                           } else if (value == "delete") {
                             _confirmDeleteItem(item.id!);
                           }
@@ -203,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             MaterialPageRoute(builder: (context) => AddItemScreen()),
           ).then((_) {
-            _loadInventoryItems();
+            _loadInventoryItems(); // Refresh list after adding new item
             _loadCategories();
           });
         },
